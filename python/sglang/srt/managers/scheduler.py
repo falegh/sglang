@@ -716,6 +716,7 @@ class Scheduler:
             self.grammar_queue.append(req)
         else:
             self.waiting_queue.append(req)
+            print("[DEBUG] req", req)
 
     def handle_embedding_request(
         self,

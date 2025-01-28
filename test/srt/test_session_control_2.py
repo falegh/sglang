@@ -27,7 +27,6 @@ def remove_prefix(text: str, prefix: str) -> str:
     return text[len(prefix) :] if text.startswith(prefix) else text
 
 
-
 class TestSessionControl(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -40,6 +39,49 @@ class TestSessionControl(unittest.TestCase):
     @classmethod
     def tearDownClass(cls):
         kill_process_tree(cls.process.pid)
+
+    def test_AA_session(self, gen_len=12):
+        chunks = [
+            "Let me tell you something about France.",
+            "The capital of France is",
+            "The population of the city is",
+            "A brief history about that city is",
+        ]
+        tokenizer = get_tokenizer(self.model)
+        chunks_ids = [tokenizer.encode(x) for x in chunks]
+        for i in range(1, len(chunks_ids)):
+            if chunks_ids[i][0] == tokenizer.bos_token_id:
+                chunks_ids[i] = chunks_ids[i][1:]
+
+        # Run two identical sessions
+        outputs_session_1 = self.run_session_control(chunks_ids, gen_len)
+        outputs_session_2 = self.run_session_control(chunks_ids, gen_len)
+
+        print("outputs from session control 1:\n", outputs_session_1)
+        print("outputs from session control 2:\n", outputs_session_2)
+
+        assert outputs_session_1 == outputs_session_2
+
+    def test_AA_no_session(self, gen_len=12):
+        chunks = [
+            "Let me tell you something about France.",
+            "The capital of France is",
+            "The population of the city is",
+            "A brief history about that city is",
+        ]
+        tokenizer = get_tokenizer(self.model)
+        chunks_ids = [tokenizer.encode(x) for x in chunks]
+        for i in range(1, len(chunks_ids)):
+            if chunks_ids[i][0] == tokenizer.bos_token_id:
+                chunks_ids[i] = chunks_ids[i][1:]
+
+        outputs_normal_1 = self.run_no_session_control(chunks_ids, tokenizer, gen_len)
+        outputs_normal_2 = self.run_no_session_control(chunks_ids, tokenizer, gen_len)
+
+        print("outputs from normal 1:\n", outputs_normal_1)
+        print("outputs from normal 2:\n", outputs_normal_2)
+
+        assert outputs_normal_1 == outputs_normal_2
 
     def test_session_control(self, gen_len=12):
         chunks = [
@@ -54,30 +96,26 @@ class TestSessionControl(unittest.TestCase):
             if chunks_ids[i][0] == tokenizer.bos_token_id:
                 chunks_ids[i] = chunks_ids[i][1:]
 
-        # 1. using session control
-        outputs_from_session = self.run_session(chunks_ids, gen_len)
+        outputs_session = self.run_session_control(chunks_ids, gen_len)
+        outputs_normal = self.run_no_session_control(chunks_ids, tokenizer, gen_len)
 
-        # 2. not use session control
-        outputs_normal = self.run_without_session(chunks_ids, tokenizer, gen_len)
+        print("outputs from session control:\n", outputs_session)
+        print("outputs from normal:\n", outputs_normal)
 
+        assert outputs_session == outputs_normal
 
-        print("outputs from chunked queries with session control:")
-        print(outputs_from_session)
-        print("outputs from normal queries:")
-        print(outputs_normal)
-        assert outputs_from_session == outputs_normal
-
-
-    def run_session(self, chunks_ids, gen_len):
+    def run_session_control(self, chunks_ids, gen_len=12):
+        # Open new session
+        # requests.post(self.base_url + "/flush_cache")
         session_id = requests.post(
             self.base_url + "/open_session",
             json={"capacity_of_str_len": 1000},
         ).json()
         rid = None
-
-
         first_rid = None
-        outputs_from_session = []
+        outputs = []
+
+        # Process chunks
         for i, chunk_ids in enumerate(chunks_ids):
             response = requests.post(
                 self.base_url + "/generate",
@@ -103,9 +141,9 @@ class TestSessionControl(unittest.TestCase):
             if i == 0:
                 first_rid = rid
             if i > 0:
-                outputs_from_session.append(response["text"])
+                outputs.append(response["text"])
 
-        # backtrack to the first request and regenerate
+        # Backtrack to first request and regenerate
         response = requests.post(
             self.base_url + "/generate",
             json={
@@ -124,20 +162,22 @@ class TestSessionControl(unittest.TestCase):
                 },
             },
         ).json()
-        outputs_from_session.append(response["text"])
-
-        return outputs_from_session
     
-    def run_without_session(self, chunks_ids, tokenizer, gen_len):
-        requests.post(self.base_url + "/flush_cache")
+        requests.post(
+            self.base_url + "/close_session",
+            json={"session_id": session_id},
+        )
 
+        outputs.append(response["text"])
+        return outputs
+
+    def run_no_session_control(self, chunks_ids, tokenizer, gen_len=12):
+        requests.post(self.base_url + "/flush_cache")
         input_ids_first_req = None
         input_ids = []
-        outputs_normal = []
+        outputs = []
         for i, chunk_ids in enumerate(chunks_ids):
             input_ids += chunk_ids
-
-            print("[DEBUG] decoded input_ids", tokenizer.decode(input_ids))
             response = requests.post(
                 self.base_url + "/generate",
                 json={
@@ -157,7 +197,7 @@ class TestSessionControl(unittest.TestCase):
                 if output_ids[0] == tokenizer.bos_token_id:
                     output_ids = output_ids[1:]
                 input_ids += output_ids[:-1]
-                outputs_normal.append(response["text"])
+                outputs.append(response["text"])
             if i == 0:
                 input_ids_first_req = input_ids.copy()
 
@@ -174,9 +214,9 @@ class TestSessionControl(unittest.TestCase):
                 },
             },
         ).json()
-        outputs_normal.append(response["text"])
+        outputs.append(response["text"])
+        return outputs
 
-        return outputs_normal
 
 if __name__ == "__main__":
     unittest.main()

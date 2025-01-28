@@ -1,0 +1,24 @@
+input_ids=[128000, 10267, 757, 3371, 499, 2555, 922, 9822, 13]
+input_ids=[128000, 10267, 757, 3371, 499, 2555, 922, 9822, 13, 791, 6864, 315, 9822, 374]
+input_ids=[128000, 10267, 757, 3371, 499, 2555, 922, 9822, 13, 791, 6864, 315, 9822, 374, 12366, 13, 9822, 374, 264, 3224, 304, 11104, 4606, 13, 1102, 791, 7187, 315, 279, 3363, 374]
+input_ids=[128000, 10267, 757, 3371, 499, 2555, 922, 9822, 13, 791, 6864, 315, 9822, 374, 12366, 13, 9822, 374, 264, 3224, 304, 11104, 4606, 13, 1102, 791, 7187, 315, 279, 3363, 374, 922, 220, 17, 13, 16, 3610, 1274, 13, 578, 3363, 374, 32, 10015, 3925, 922, 430, 3363, 374]
+input_ids=[128000, 10267, 757, 3371, 499, 2555, 922, 9822, 13, 32, 10015, 3925, 922, 430, 3363, 374]
+
+
+input_ids=[128000, 10267, 757, 3371, 499, 2555, 922, 9822, 13]
+input_ids=[128000, 10267, 757, 3371, 499, 2555, 922, 9822, 13, 791, 6864, 315, 9822, 374]
+input_ids=[128000, 10267, 757, 3371, 499, 2555, 922, 9822, 13, 791, 6864, 315, 9822, 374, 12366, 13, 9822, 374, 264, 3224, 304, 11104, 4606, 13, 1102, 791, 7187, 315, 279, 3363, 374]
+input_ids=[128000, 10267, 757, 3371, 499, 2555, 922, 9822, 13, 791, 6864, 315, 9822, 374, 12366, 13, 9822, 374, 264, 3224, 304, 11104, 4606, 13, 1102, 791, 7187, 315, 279, 3363, 374, 2212, 220, 17, 13, 16, 3610, 1274, 13, 578, 3363, 374, 32, 10015, 3925, 922, 430, 3363, 374]
+input_ids=[128000, 10267, 757, 3371, 499, 2555, 922, 9822, 13, 32, 10015, 3925, 922, 430, 3363, 374]
+
+chunks = [
+    "Let me tell you something about France.",
+    "The capital of France is",
+    "The population of the city is",
+    "A brief history about that city is",
+]
+
+outputs from chunked queries with session control:
+[' Paris. France is a country in Western Europe. It is', ' about 2.1 million people. The city is known', ' that it was founded in 259 BC by the Gauls', ' that it was founded by the Gauls, a Celtic tribe']
+outputs from normal queries:
+[' Paris. France is a country in Western Europe. It is', ' around 2.1 million people. The city is known', ' that it was founded in 259 BC by the Gauls', ' that it was founded by the Gauls, a Celtic tribe']
